@@ -1,0 +1,270 @@
+---
+title: "Biostat620hw1-RongJi"
+author: "RongJi"
+date: '2024-02-05'
+output: html_document
+---
+
+<https://github.com/rongjiiiii/620HW1.git>
+
+Problem 1: Data Collection and Processing
+
+(a) purpose of data collection
+
+We are interested in the relationship between social median screen time per day and the sleep times .We hypothesize that a higher proportion of social media screen time is associated with later sleep times in individuals.
+
+[\^1]: Hjetland, G. J., Skogen, J. C., Hysing, M., & Sivertsen, B. (2021). The Association Between Self-Reported Screen Time, Social Media Addiction, and Sleep Among Norwegian University Students. Frontiers in public health, 9, 794307. <https://doi.org/10.3389/fpubh.2021.794307>
+
+(b) Explain the role of Informed Consent Form in connection to the planned study and data collection
+
+This is a document that participants in a study sign to acknowledge that they understand the nature of the research and agree to participate. It's a critical component of ethical research, especially when personal data is being collected. You need to explain how the consent form is related to your study and data collection, indicating that participants are made aware of what data is being collected, why, and how it will be used. Perhaps most importantly, an Informed Consent Form also includes information about confidentiality and the right to withdraw from the study at any time. These measures ensure that participants are fully informed about their rights as participants, and that they are able to make an informed decision about whether to participate in the study.
+
+(c) Data collection plan:
+
+1\. Data are collected on January 26, 2024, the data freeze day.
+
+2\. Variables collected include total screen time per day, social media screen time per day, number of pickups per day and first pick up time.
+
+3\. Data are collected from each participant's mobile phone.
+
+4\. About 34 students' data who enrolled in Biostat620 will be collected,and each participation has about 3 weeks' data, ending at January 26,2024.
+
+(d)
+
+```{r}
+rm(list = ls())
+# install.packages("gridExtra")
+library(readxl)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+hw1data <- read_excel("/Users/jiniuniu/Downloads/screentimedata.xlsx")
+hw1data$Pickup.1st <- format(hw1data$Pickup.1st, "%H:%M")
+hw1data$Date <- as.Date(hw1data$Date, format = "%m/%d/%Y")
+convert_time <- function(x) {
+  x <- as.period(hm(x))
+  return(60*hour(x) + minute(x))
+}
+
+hw1data$Total.ST.min <- convert_time(hw1data$Total.ST)
+hw1data$Social.ST.min <- convert_time(hw1data$Social.ST)
+
+hw1data$Social.ST.prop <- hw1data$Social.ST.min / hw1data$Total.ST.min
+hw1data$Duration.per.use <- hw1data$Total.ST.min / hw1data$Pickups
+hw1data
+```
+
+Problem 2
+
+(a).Make a time series plot of each of the five variables in your data. Describe temporal patterns from these time series plots.
+
+```{r}
+library(ggplot2)
+library(gridExtra) 
+
+
+tot.st.min.plot <- ggplot(hw1data, aes(x = Date, y = Total.ST.min)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Total Screen Time per Day", x = "Date", y = "Total Screen Time (min)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+
+social.st.min.plot <- ggplot(hw1data, aes(x = Date, y = Social.ST.min)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Social Screen Time per Day", x = "Date", y = "Social Screen Time (min)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+
+pickups.plot <- ggplot(hw1data, aes(x = Date, y = Pickups)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Number of Pickups per Day", x = "Date", y = "Number of Pickups") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+
+social.st.prop.plot <- ggplot(hw1data, aes(x = Date, y = Social.ST.prop)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Proportion of Social Screen Time per Day", x = "Date", y = "Proportion of Social Screen Time") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+
+duration.per.use.plot <- ggplot(hw1data, aes(x = Date, y = Duration.per.use)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Duration per Use per Day", x = "Date", y = "Duration per Use (min)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+
+tot.st.min.plot
+social.st.min.plot
+pickups.plot
+social.st.prop.plot
+duration.per.use.plot
+```
+
+(b)
+
+```{r}
+library(GGally)
+ggpairs(hw1data[, c(
+  "Total.ST.min",
+  "Social.ST.min",
+  "Pickups",
+  "Social.ST.prop",
+  "Duration.per.use"
+)])
+```
+
+Total Screen Time per day and Social Screen Time per day has the highest correlation.
+
+(c)
+
+```{r}
+occupation_time_curve_TST <- ggplot(hw1data, aes(x = Total.ST.min)) +
+  labs(title = "Occupation Time Curve for Total Screen Time",
+       x = "Total Screen Time (min)",
+       y = "P(X >= c)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+occupation_time_curve_TST + stat_ecdf(geom = "step", aes(y = 1 - ..y..))
+
+occupation_time_curve_SST <- ggplot(hw1data, aes(x = Social.ST.min)) +
+  labs(title = "Occupation Time Curve for Social Screen Time",
+       x = "Social Screen Time (min)",
+       y = "P(X >= c)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+occupation_time_curve_SST + stat_ecdf(geom = "step", aes(y = 1 - ..y..))
+
+occupation_time_curve_pks <- ggplot(hw1data, aes(x = Pickups)) +
+  labs(title = "Occupation Time Curve for Pickups",
+       x = "Number of Pickups",
+       y = "P(X >= c)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+occupation_time_curve_pks + stat_ecdf(geom = "step", aes(y = 1 - ..y..))
+
+occupation_time_curve_prop <- ggplot(hw1data, aes(x = Social.ST.prop)) +
+  labs(title = "Occupation Time Curve for Proportion of SST",
+       x = "Proportion of Social Screen Time per day",
+       y = "P(X >= c)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+occupation_time_curve_prop + stat_ecdf(geom = "step", aes(y = 1 - ..y..))
+
+occupation_time_curve_duration <- ggplot(hw1data, aes(x = Duration.per.use)) +
+  labs(title = "Occupation Time Curve for Daily Duration per Use(min)",
+       x = "Daily Duration per Use",
+       y = "P(X >= c)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8))
+occupation_time_curve_duration + stat_ecdf(geom = "step", aes(y = 1 - ..y..))
+```
+
+(d)
+
+```{r}
+acf(hw1data$Total.ST.min, plot = FALSE, lag.max = 21)
+acf(hw1data$Social.ST.min, plot = FALSE, lag.max = 21)
+acf(hw1data$Pickups, plot = FALSE, lag.max = 21)
+acf(hw1data$Social.ST.prop, plot = FALSE, lag.max = 21)
+acf(hw1data$Duration.per.use, plot = FALSE, lag.max = 21)
+```
+
+There are no obvious autocorrelation.
+
+Problem 3
+
+(a)
+
+```{r}
+hw1data <- hw1data %>% 
+  mutate(Pickup.1st = as.POSIXct(Pickup.1st, format = "%H:%M")) %>% 
+  mutate(Pickup.1st.angular=(hour(Pickup.1st)*60+minute(Pickup.1st))/(24*60)*360)
+hw1data$Pickup.1st.angular
+```
+
+(b)
+
+```{r}
+library(circular)
+first.pickup.circle <- circular(hw1data$Pickup.1st.angular,
+                             units = "degrees",
+                             template = "clock24")
+plot(first.pickup.circle ,col = "red", main = 'scatterplot')
+```
+
+(c)
+
+```{r}
+plot(first.pickup.circle, stack = TRUE, bins = 288, col = "red", main = 'histogram')
+```
+
+Problem 4
+
+(a) St acts as a standardization here, when the daily total screen time is to low or to high, it will convert it to other unit, which will narrow the scale, and satisfies the assumption of Poisson Distribution.
+
+(b)
+
+```{r}
+model <- glm(Pickups ~ offset(log(hw1data$Total.ST.min/60)), family = "poisson", data = hw1data)
+summary(model)
+lambda <- exp(coef(model)[1])
+```
+
+(c)
+
+```{r}
+library(lubridate)
+hw1data$Xt <- ifelse(wday(hw1data$Date) %in% c(2,3,4,5,6), 1, 0)
+hw1data$Zt <- ifelse(hw1data$Date >= as.Date('2024-01-10'), 1, 0)
+model2 <- glm(Pickups ~ Xt + Zt + offset(log(Total.ST.min/60)), family = poisson, data = hw1data)
+summary(model2)
+```
+
+(c.1) There is significant evidence that I have more pickups on weekdays than weekends because p\<2e-16
+
+(c.2) There is no significant evidence that I have had more pickups after the winter semester began since p = 0.0529 \> 0.05
+
+5
+
+(a)
+
+```{r}
+parameter <- mle.vonmises((hw1data$Pickup.1st.angular*pi)/180)
+print(parameter)
+```
+
+(b)
+
+```{r}
+x = (8*60+30)/(24*60)*360
+x_pi = x*pi/180
+1 - pvonmises(x_pi, mu = parameter$mu, kappa = parameter$kappa)
+```
+
+The probability that the first pickup is later than 8:30AM is 0.0511
